@@ -1,5 +1,7 @@
 """Optimized screen capture with per-frame OCR of the in-game percentage."""
 
+from __future__ import annotations
+
 import time
 from pathlib import Path
 from typing import Dict, Optional, Tuple
