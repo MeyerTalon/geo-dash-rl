@@ -97,7 +97,7 @@ class ActionEngine:
         if self.is_holding:
             self.release()
 
-    def execute(self, action: Action) -> None:
+    def execute(self, action: Action) -> Action:
         """Execute an action based on the Action enum.
 
         Args:
@@ -111,6 +111,7 @@ class ActionEngine:
             self.no_action()
         else:
             raise ValueError(f"Unknown action: {action}")
+        return action
 
     def set_click_position(self, x: int, y: int) -> None:
         """Update the click position.
@@ -135,10 +136,14 @@ class RandomActionEngine(ActionEngine):
     def __init__(self, click_position: Tuple[int, int] | None = None) -> None:
         super().__init__(click_position)
 
-    def execute(self) -> None:
-        """Execute a random action."""
+    def execute(self) -> Action:
+        """Execute a random action.
+        Returns:
+            The action executed.
+        """
         action = random.choice([Action.TAP, Action.HOLD, Action.NO_ACTION])
         super().execute(action)
+        return action
 
 
 if __name__ == "__main__":

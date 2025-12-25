@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from game_engine.actions import Action
+from game_engine.action_engine import Action
 
 class ImpalaCNN(nn.Module):
     """IMPALA-style CNN for processing 2D platformer game frames.
