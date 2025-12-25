@@ -51,8 +51,5 @@ To ensure automation scripts work correctly, **set your Geometry Dash window siz
 
 **Run all commands from the geo-dash-rl directory.**
 ```bash
-python src/game_engine/start_stereo_madness.py
-```
-```bash
-python src/game_engine/collect_data.py
+python src/game_engine/test.py
 ```

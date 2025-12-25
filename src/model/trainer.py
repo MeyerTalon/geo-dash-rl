@@ -345,27 +345,39 @@ if __name__ == "__main__":
     from torch.utils.data import TensorDataset
 
     # Create dummy model and data
-    model = ImpalaCNN(input_shape=(3, 720, 1280), num_actions=3, use_lstm=True)
-    optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
-
-    # Dummy dataset
-    states = torch.randn(1, 3, 720, 1280)
-    actions = torch.randint(0, 3, (1,))
-    rewards = torch.randn(1, 1)
-    dones = torch.zeros(1, 1)
-    old_log_probs = torch.randn(1)
-
-    dataset = TensorDataset(states, actions, rewards, dones, old_log_probs)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-
-    # Create trainer
-    trainer = ImpalaTrainer(
-        model=model,
-        dataloader=dataloader,
-        optimizer=optimizer,
-        device="cpu",
-        log_dir="src/model/checkpoints",
+    model = ImpalaCNN(
+        input_shape=(3, 720, 1280), 
+        num_actions=3, 
+        use_lstm=True
     )
+    
+    # Count parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    print()
+    
+    # optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 
-    # Train
-    trainer.train(num_epochs=1, log_every=1)
+    # # Dummy dataset
+    # states = torch.randn(1, 3, 720, 1280)
+    # actions = torch.randint(0, 3, (1,))
+    # rewards = torch.randn(1, 1)
+    # dones = torch.zeros(1, 1)
+    # old_log_probs = torch.randn(1)
+
+    # dataset = TensorDataset(states, actions, rewards, dones, old_log_probs)
+    # dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+
+    # # Create trainer
+    # trainer = ImpalaTrainer(
+    #     model=model,
+    #     dataloader=dataloader,
+    #     optimizer=optimizer,
+    #     device="cpu",
+    #     log_dir="src/model/checkpoints",
+    # )
+
+    # # Train
+    # trainer.train(num_epochs=1, log_every=1)

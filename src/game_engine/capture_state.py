@@ -11,6 +11,8 @@ import mss
 import numpy as np
 import pytesseract
 
+from actions import RandomActionEngine
+
 OUTPUT_DIR = Path(__file__).resolve().parent / "frames"
 CAPTURE_SIZE = {"width": 1280, "height": 720}
 
@@ -108,12 +110,16 @@ def capture_state(
 
     try:
         while time.perf_counter() - start < max_seconds:
+
+
             screen_frame = np.array(sct.grab(screen_bounds))
             percentage_frame = np.array(sct.grab(percentage_bounds))
 
             pct_value = _extract_percentage(percentage_frame)
             
             if debug:
+                engine = RandomActionEngine()
+                engine.execute()
                 cv2.imwrite(
                     str(OUTPUT_DIR / f"frame_{frame_count:05d}.png"),
                     cv2.cvtColor(screen_frame, cv2.COLOR_BGRA2BGR),

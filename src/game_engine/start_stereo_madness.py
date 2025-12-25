@@ -1,3 +1,5 @@
+"""Start Geometry Dash Stereo Madness level via Steam."""
+
 from __future__ import annotations
 
 import subprocess

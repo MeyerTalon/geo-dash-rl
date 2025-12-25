@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from game_engine.actions import Action
 
 class ImpalaCNN(nn.Module):
     """IMPALA-style CNN for processing 2D platformer game frames.
@@ -32,7 +33,7 @@ class ImpalaCNN(nn.Module):
         self,
         input_shape: tuple[int, int, int] = (3, 720, 1280),
         num_actions: int = 2,
-        use_lstm: bool = True,
+        use_lstm: bool = False,
         lstm_size: int = 256,
     ) -> None:
         super().__init__()
@@ -174,10 +175,6 @@ class ImpalaCNN(nn.Module):
 
 
 if __name__ == "__main__":
-    class Action(Enum):
-        JUMP = 0
-        HOLD = 1
-        NO_ACTION = 2
 
     # Example usage
     model = ImpalaCNN(
