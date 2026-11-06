@@ -1,0 +1,66 @@
+[tools]
+python = "3.11"
+uv = "latest"
+ripgrep = "latest"
+rust = { version = "1.94", components = "rustfmt,clippy" }
+
+[env]
+KMP_DUPLICATE_LIB_OK = "TRUE"
+CONDA_PREFIX = false
+
+[tasks.setup]
+description = "Install Python dependencies into .venv and build the Rust engine into it (add --group learn for the notebooks)"
+run = "uv sync"
+depends_post = ["rust:develop"]
+
+[tasks."rust:develop"]
+description = "Build the Rust engine in release mode and install it into .venv as geo_dash_native"
+run = "uv run maturin develop --release --manifest-path rust/bindings/Cargo.toml"
+
+[tasks."rust:build"]
+description = "Build every Rust crate"
+run = "cargo build --manifest-path rust/Cargo.toml --workspace"
+
+[tasks."run:bench"]
+description = "Step the simulator with random actions and report steps per second"
+depends = ["rust:develop"]
+run = "uv run python -m src.bench_sim --config src/configs/default.yml --steps 2000"
+
+[tasks.fmt]
+description = "Format Python and Rust code"
+run = [
+  "uv run ruff format",
+  "cargo fmt --manifest-path rust/Cargo.toml --all",
+]
+
+[tasks.lint]
+description = "Format-check, lint, and type-check Python and Rust code"
+depends = ["lint:golden-path"]
+run = [
+  "uv run ruff format --check",
+  "uv run ruff check",
+  "uv run mypy",
+  "cargo fmt --manifest-path rust/Cargo.toml --all --check",
+  "cargo clippy --manifest-path rust/Cargo.toml --workspace --all-targets -- -D warnings",
+]
+
+[tasks."lint:golden-path"]
+description = "Fail on comments or lint suppressions in code and config, or on skill dirs that are not symlinks to .agents/skills"
+run = [
+  "if rg -n '(^|\\s)#' src typings -g '*.py' -g '*.pyi' -g '*.yml'; then exit 1; else test $? -eq 1; fi",
+  "if rg -n '//' rust -g '*.rs'; then exit 1; else test $? -eq 1; fi",
+  "if rg -n '^\\s*#' mise.toml pyproject.toml rust/Cargo.toml rust/clippy.toml rust/engine/Cargo.toml rust/bindings/Cargo.toml rust/bindings/pyproject.toml; then exit 1; else test $? -eq 1; fi",
+  "for dir in .claude .codex .cursor; do test \"$(readlink $dir/skills)\" = ../.agents/skills || exit 1; done",
+]
+
+[tasks.test]
+description = "Run the pytest suite and the cargo tests"
+depends = ["rust:develop"]
+run = [
+  "uv run pytest -q",
+  "cargo test --manifest-path rust/Cargo.toml --workspace",
+]
+
+[tasks.check]
+description = "Lint and test everything"
+depends = ["lint", "test"]

@@ -1,0 +1,9 @@
+seed: 0
+sim:
+  num_envs: 16
+  frame_skip: 4
+  obs_width_px: 128
+  obs_height_px: 72
+  level_length_units: 300.0
+  death_penalty: 1.0
+  completion_bonus: 1.0

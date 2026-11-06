@@ -1,55 +1,62 @@
 # geo-dash-rl
 
-## Pre-Requisites 
-To set up the project, perform the following steps:
+A reinforcement learning agent that plays Geometry Dash from pixels. It trains in a simulator written for this project and runs on the real game only at inference. The target is levels the agent has never seen. It runs on macOS.
 
-### 0. Install Geometry Dash (Steam) and Tesseract (OCR)
+The full design is in [docs/system-architecture.md](docs/system-architecture.md).
 
-- Install Geometry Dash from Steam.
-- Install Tesseract (used for OCR of the on-screen percentage). On macOS:
+## How it works
 
-  ```bash
-  brew install tesseract
-  ```
+1. A Rust engine reimplements the game's physics and renders frames. It steps many environments in parallel.
+2. A PyTorch learner trains an IMPALA-style CNN policy with PPO-style updates against that engine.
+3. A real-game player (not built yet) captures the screen, feeds the same preprocessing to the trained policy, and presses the mouse.
 
----
+This is online RL in a simulator, not offline RL and not a world model.
 
-### 1. Create and Activate the Conda Environment
+## Status
 
-1. Ensure you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/individual) installed.
-2. From the root of the repository, create the environment using the provided `environment.yml`:
+The repository is mid-rewrite. The old version trained in the live game with OCR on the level percentage, and none of it remains. What exists now:
 
-    ```bash
-    conda env create -f environment.yml
-    ```
+- A Rust engine with placeholder cube physics, generated spike levels, a grayscale renderer, and a parallel vectorized environment.
+- PyO3 bindings and a typed Python wrapper (`src/sim/`).
+- A random-policy benchmark.
 
-3. Activate the environment:
+The network, trainer, level importer, and real-game player are planned. See the roadmap in the architecture doc.
 
-    ```bash
-    conda activate geo-dash-rl
-    ```
+## Layout
 
----
+- `rust/engine/` is the simulator: physics, levels, renderer, vectorized environment.
+- `rust/bindings/` builds the engine into the Python module `geo_dash_native`.
+- `src/sim/` is the typed Python layer over the engine.
+- `src/config.py` and `src/configs/` read YAML configs. Every hyperparameter is a required key.
+- `src/bench_sim.py` steps the simulator with random actions and reports throughput.
+- `typings/` holds type stubs for the native module.
+- `docs/` holds the architecture doc.
+- `AGENTS.md` and `.agents/skills/` hold the rules for AI coding agents.
 
+## Setup
 
-### 2. Configure Geometry Dash Window Size
+[mise](https://mise.jdx.dev) pins Python 3.11, uv, ripgrep, and Rust 1.94, and defines every task.
 
-To ensure automation scripts work correctly, **set your Geometry Dash window size to exactly 1280x720**:
+```bash
+brew install mise
+mise install
+mise run setup
+```
 
-1. Open Geometry Dash.
-2. Go to the in-game settings (click the gear icon).
-3. Find the "Resolution" or "Window Size" option (typically under Video/Graphics settings).
-4. Set the window to **1280x720**.
-5. Make sure the game is in windowed mode (not fullscreen), and the window is positioned fully on screen.
-6. In the level settings menu ensure that show percentage, and only show percentage, is enabled.
+`mise run setup` installs the Python dependencies into `.venv` and builds the Rust engine into it. Run `mise run rust:develop` after any change under `rust/` to rebuild the module.
 
-*Automation scripts assume the window is at (0, 0) on your desktop. If you encounter issues, manually drag the window to the top-left corner of your primary monitor.*
-
-
+Training needs no game install, no Tesseract, and no screen permissions.
 
 ## Commands
 
-**Run all commands from the geo-dash-rl directory.**
+Run everything from the repository root.
+
 ```bash
-python src/game_engine/test.py
+mise run setup          # uv sync, then build the engine into .venv
+mise run rust:develop   # rebuild the engine into .venv
+mise run rust:build     # cargo build for every crate
+mise run run:bench      # random-policy simulator throughput
+mise run fmt            # ruff format and cargo fmt
+mise run check          # lint and test
+mise tasks              # list all tasks
 ```

@@ -1,0 +1,17 @@
+[package]
+name = "geo-dash-bindings"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "geo_dash_native"
+crate-type = ["cdylib"]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+geo-dash-engine = { version = "0.1.0", path = "../engine" }
+pyo3 = "0.30.1"

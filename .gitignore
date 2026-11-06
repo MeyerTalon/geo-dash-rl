@@ -209,3 +209,7 @@ __marimo__/
 # Local data
 src/game_engine/frames/
 src/model/checkpoints/
+# geo-dash-rl
+/checkpoints/
+.DS_Store
+/.vscode/

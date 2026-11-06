@@ -1,0 +1,61 @@
+[project]
+name = "geo-dash-rl"
+version = "0.1.0"
+description = "Reinforcement learning agent for Geometry Dash."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = "Apache-2.0"
+dependencies = [
+    "numpy>=2.2.6",
+    "pyyaml>=6.0.3",
+    "torch>=2.9.0",
+]
+
+[dependency-groups]
+dev = [
+    "maturin>=1.16.0",
+    "mypy>=1.18.0",
+    "pytest>=8.4.0",
+    "ruff>=0.14.0",
+    "types-pyyaml>=6.0.12",
+]
+learn = []
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+extend-select = [
+    "ANN",
+    "B",
+    "BLE",
+    "C4",
+    "ERA",
+    "FBT",
+    "I",
+    "PGH",
+    "PLR2004",
+    "PTH",
+    "RET",
+    "SIM",
+    "UP",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["PLR2004"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+mypy_path = "typings"
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["src"]
+python_files = ["test_*.py"]

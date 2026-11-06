@@ -1,0 +1,11 @@
+[package]
+name = "geo-dash-engine"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rand = "0.10.3"
+rayon = "1.12.0"
