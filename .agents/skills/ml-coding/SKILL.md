@@ -22,13 +22,14 @@ and only acts in the real game at inference. Python style comes from
 
 ## Rules
 
-- **Keep the simulator out of the learner.** `src/model/` never imports
-  `src/sim/`. The trainer consumes batches of states, actions, rewards, dones,
+- **Keep the simulator out of the learner.** `python/src/model/` never imports
+  `python/src/sim/`. The trainer consumes batches of states, actions, rewards, dones,
   and old log-probs, so it runs on random tensors with no simulator built.
-  Rollout collection lives in the entry point and talks to a `VecEnv`
-  protocol.
+  Rollout collection lives in `python/src/rollout.py`, beside the entry points, and
+  talks to a `VecEnv` protocol.
 - **Native PyTorch first.** Compose `nn.Conv2d`, `nn.LSTM`, `nn.Linear`,
-  `nn.LayerNorm`, `torch.distributions`. Hand-roll a block (the IMPALA
+  `nn.LayerNorm`, `F.log_softmax`. `torch.distributions` is untyped under
+  mypy strict, so policies use `torch.multinomial` and `gather` directly. Hand-roll a block (the IMPALA
   residual block) only when no built-in exists, and say why in its docstring.
 - **Shape discipline.** Batch first everywhere. Time-major data is `(B, T)`
   for scalars and `(B, T, C, H, W)` for frames. `forward` returns raw value
@@ -36,11 +37,11 @@ and only acts in the real game at inference. Python style comes from
   in `forward`.
 - **Configs are the only source of hyperparameters.** `gamma`, `gae_lambda`,
   `clip_epsilon`, `value_loss_coef`, `entropy_coef`, `max_grad_norm`, learning
-  rate, and network widths are required keys in `src/configs/*.yml`, read into
+  rate, and network widths are required keys in `python/src/configs/*.yml`, read into
   a frozen dataclass. No default in code, no `config.get(key, fallback)`. A
   new knob goes into every config in the same change. Copy the pattern in
-  `src/sim/config.py`: a frozen dataclass whose `from_config` reads each key
-  with the `require_*` helpers in `src/config.py` and validates ranges.
+  `python/src/sim/config.py`: a frozen dataclass whose `from_config` reads each key
+  with the `require_*` helpers in `python/src/config.py` and validates ranges.
 - **One observation path.** The simulator renders frames and the real-game
   player captures them, and both go through one shared preprocessing step
   (resize, grayscale, scale, stacking) before the model. Its output shape and
@@ -75,8 +76,9 @@ and only acts in the real game at inference. Python style comes from
 ## Anti-goals
 
 Don't introduce new RL or ML frameworks or tooling (gymnasium environments,
-Stable-Baselines3, RLlib, TorchRL, Lightning, Hydra, wandb) unless asked. The
-vectorized environment is the Rust `VecEnv` behind the `src/sim/` protocol,
+Stable-Baselines3, RLlib, TorchRL, Lightning, Hydra, wandb) unless asked.
+TensorBoard is the approved metrics viewer, through `python/src/run_log.py`. The
+vectorized environment is the Rust `VecEnv` behind the `python/src/sim/` protocol,
 not a gymnasium wrapper. Don't add a code-level default for a hyperparameter, skip checkpoint metadata, put sampling in `forward`, or
 change the observation path without saying so. Don't touch the reward or the
 done signal quietly: they define the task.

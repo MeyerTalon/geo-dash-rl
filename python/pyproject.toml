@@ -2,12 +2,13 @@
 name = "geo-dash-rl"
 version = "0.1.0"
 description = "Reinforcement learning agent for Geometry Dash."
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.11,<3.12"
 license = "Apache-2.0"
 dependencies = [
     "numpy>=2.2.6",
     "pyyaml>=6.0.3",
+    "tensorboard>=2.21.0",
     "torch>=2.9.0",
 ]
 
@@ -53,9 +54,10 @@ extend-select = [
 [tool.mypy]
 strict = true
 python_version = "3.11"
-mypy_path = "typings"
+mypy_path = "typings:."
 files = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["src"]
+pythonpath = ["."]
 python_files = ["test_*.py"]

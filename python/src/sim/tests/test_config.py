@@ -5,6 +5,7 @@ from src.sim.config import SimConfig
 VALID_SECTION: dict[str, object] = {
     'num_envs': 4,
     'frame_skip': 4,
+    'frame_stack': 2,
     'obs_width_px': 32,
     'obs_height_px': 18,
     'level_length_units': 100.0,
@@ -16,7 +17,7 @@ VALID_SECTION: dict[str, object] = {
 def test_from_config_reads_every_key() -> None:
     config = SimConfig.from_config(VALID_SECTION)
     assert config.num_envs == 4
-    assert config.obs_shape == (4, 18, 32)
+    assert config.obs_shape == (4, 2, 18, 32)
 
 
 def test_missing_key_raises() -> None:
@@ -33,8 +34,10 @@ def test_missing_key_raises() -> None:
         ('num_envs', 0),
         ('frame_skip', 0),
         ('frame_skip', 256),
+        ('frame_stack', 0),
+        ('frame_stack', 256),
         ('obs_width_px', 0),
-        ('obs_height_px', 65536),
+        ('obs_height_px', 65_536),
         ('level_length_units', 0.0),
         ('death_penalty', -1.0),
         ('completion_bonus', -1.0),

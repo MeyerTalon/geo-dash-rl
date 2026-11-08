@@ -2,6 +2,7 @@ class EnvConfig:
     def __init__(
         self,
         frame_skip: int,
+        frame_stack: int,
         level_length_units: float,
         obs_width_px: int,
         obs_height_px: int,

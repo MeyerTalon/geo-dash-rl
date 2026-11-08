@@ -1,4 +1,4 @@
-use std::num::NonZeroU16;
+use std::num::{NonZeroU8, NonZeroU16};
 
 use crate::level::Level;
 use crate::physics::{PLAYER_SIZE_UNITS, Player};
@@ -18,12 +18,18 @@ const PLAYER_VALUE: u8 = 255;
 pub struct ObsSpec {
     pub width_px: NonZeroU16,
     pub height_px: NonZeroU16,
+    pub frame_stack: NonZeroU8,
 }
 
 impl ObsSpec {
     #[must_use]
     pub fn frame_len(self) -> usize {
         usize::from(self.width_px.get()) * usize::from(self.height_px.get())
+    }
+
+    #[must_use]
+    pub fn stack_len(self) -> usize {
+        self.frame_len() * usize::from(self.frame_stack.get())
     }
 }
 
@@ -73,6 +79,7 @@ mod tests {
         ObsSpec {
             width_px: NonZeroU16::new(WIDTH_PX).unwrap(),
             height_px: NonZeroU16::new(HEIGHT_PX).unwrap(),
+            frame_stack: NonZeroU8::MIN,
         }
     }
 

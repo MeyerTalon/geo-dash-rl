@@ -17,7 +17,7 @@ This is online RL in a simulator, not offline RL and not a world model.
 The repository is mid-rewrite. The old version trained in the live game with OCR on the level percentage, and none of it remains. What exists now:
 
 - A Rust engine with placeholder cube physics, generated spike levels, a grayscale renderer, and a parallel vectorized environment.
-- PyO3 bindings and a typed Python wrapper (`src/sim/`).
+- PyO3 bindings and a typed Python wrapper (`python/src/sim/`).
 - A random-policy benchmark.
 
 The network, trainer, level importer, and real-game player are planned. See the roadmap in the architecture doc.
@@ -26,10 +26,10 @@ The network, trainer, level importer, and real-game player are planned. See the 
 
 - `rust/engine/` is the simulator: physics, levels, renderer, vectorized environment.
 - `rust/bindings/` builds the engine into the Python module `geo_dash_native`.
-- `src/sim/` is the typed Python layer over the engine.
-- `src/config.py` and `src/configs/` read YAML configs. Every hyperparameter is a required key.
-- `src/bench_sim.py` steps the simulator with random actions and reports throughput.
-- `typings/` holds type stubs for the native module.
+- `python/src/sim/` is the typed Python layer over the engine.
+- `python/src/config.py` and `python/src/configs/` read YAML configs. Every hyperparameter is a required key.
+- `python/src/bench_sim.py` steps the simulator with random actions and reports throughput.
+- `python/typings/` holds type stubs for the native module.
 - `docs/` holds the architecture doc.
 - `AGENTS.md` and `.agents/skills/` hold the rules for AI coding agents.
 
@@ -43,7 +43,7 @@ mise install
 mise run setup
 ```
 
-`mise run setup` installs the Python dependencies into `.venv` and builds the Rust engine into it. Run `mise run rust:develop` after any change under `rust/` to rebuild the module.
+`mise run setup` installs the Python dependencies into `python/.venv` and builds the Rust engine into it. Run `mise run rust:develop` after any change under `rust/` to rebuild the module.
 
 Training needs no game install, no Tesseract, and no screen permissions.
 
@@ -52,8 +52,8 @@ Training needs no game install, no Tesseract, and no screen permissions.
 Run everything from the repository root.
 
 ```bash
-mise run setup          # uv sync, then build the engine into .venv
-mise run rust:develop   # rebuild the engine into .venv
+mise run setup          # uv sync, then build the engine into python/.venv
+mise run rust:develop   # rebuild the engine into python/.venv
 mise run rust:build     # cargo build for every crate
 mise run run:bench      # random-policy simulator throughput
 mise run fmt            # ruff format and cargo fmt

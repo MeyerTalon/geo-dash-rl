@@ -1,0 +1,14 @@
+total_env_steps: 1_000_000
+rollout_steps: 256
+epochs_per_update: 3
+minibatch_size: 512
+learning_rate: 5.0e-4
+adam_epsilon: 1.0e-5
+gamma: 0.999
+gae_lambda: 0.95
+clip_epsilon: 0.2
+value_loss_coef: 0.5
+entropy_coef: 0.01
+max_grad_norm: 0.5
+checkpoint_interval_updates: 250
+metrics_window_episodes: 100

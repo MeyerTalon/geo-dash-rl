@@ -7,8 +7,8 @@ description: >
   inline imports, small single-job modules, reuse before writing new code,
   deleting dead code, strict types with no Any, single quotes, and fast
   offline tests that never need the game or a screen. Use this skill whenever
-  writing, editing, refactoring, or reviewing any Python in this repo (src/,
-  tests, typings/ stubs), even for a small fix, and even if the user
+  writing, editing, refactoring, or reviewing any Python in this repo (python/src/,
+  tests, python/typings/ stubs), even for a small fix, and even if the user
   doesn't mention style or conventions.
 ---
 
@@ -18,7 +18,7 @@ These rules apply to every `.py` and `.pyi` file. The goal is code that the next
 module imports and builds on instead of copy-pasting.
 
 Repo context: Python 3.11, `uv` for deps, ruff for format and lint (single
-quotes), mypy `--strict` with stubs in `typings/`, pytest, all run through
+quotes), mypy `--strict` with stubs in `python/typings/`, pytest, all run through
 `mise`. `mise run check` enforces type hints, no `Any`, import order,
 keyword-only booleans, and no comments. The rules below cover what the tools
 can't judge.
@@ -34,7 +34,7 @@ simulator. Don't reimplement simulator logic in Python.
 - No `cast`, no `Any`, and no config changes that loosen ruff or mypy. Fix the
   code.
 - An untyped library call gets a typed local (`frame: np.ndarray = ...`) or a
-  stub in `typings/`, declaring only what the code uses (`geo_dash_native`, for
+  stub in `python/typings/`, declaring only what the code uses (`geo_dash_native`, for
   example).
 - A workaround for a platform quirk (the macOS OpenMP duplicate-library error)
   belongs in the environment or the mise task, not in an `os.environ` line at
@@ -46,10 +46,10 @@ simulator. Don't reimplement simulator logic in Python.
 
   | Package | Owns | May import |
   |---|---|---|
-  | `src/config.py` | reading typed values from YAML | nothing in the project |
-  | `src/sim/` | typed access to the Rust simulator | `src.config` |
-  | `src/model/` (planned) | the network, the trainer, and their configs | `src.config` |
-  | entry points (`src/bench_sim.py` and future train and play scripts) | wiring the packages together | everything |
+  | `python/src/config.py` | reading typed values from YAML | nothing in the project |
+  | `python/src/sim/` | typed access to the Rust simulator | `src.config` |
+  | `python/src/model/` | the network, the trainer, and their configs | `src.config` |
+  | entry points (`python/src/bench_sim.py`, `python/src/train.py`, `python/src/eval.py`) and their shared wiring (`python/src/rollout.py`, `python/src/run_log.py`) | wiring the packages together | everything |
 
   `sim` and `model` never import each other. The entry point turns observation
   arrays into tensor batches and calls the trainer. If a lower module
@@ -69,7 +69,7 @@ simulator. Don't reimplement simulator logic in Python.
   take paths, devices, and settings as parameters, never globals or env vars.
 - Functions do one thing: don't mix stepping, parsing, and file I/O in one body.
 - Imports go at the top of the module, always. Platform-only imports
-  (`AppKit`) are top-level too, behind a stub in `typings/`, not inside a
+  (`AppKit`) are top-level too, behind a stub in `python/typings/`, not inside a
   method.
 - Every module is in the Feature map in `AGENTS.md` with one line on what it
   owns.
@@ -78,7 +78,7 @@ simulator. Don't reimplement simulator logic in Python.
 
 Each new script starts as a copy of the nearest one, so a duplicate spreads and
 two copies of one rule drift apart. Before writing a function, type, or
-constant, search `src/` for one that already does the job and import it within
+constant, search `python/src/` for one that already does the job and import it within
 the layer rules above.
 
 - **Extend before you add.** When a function almost fits, give it a parameter

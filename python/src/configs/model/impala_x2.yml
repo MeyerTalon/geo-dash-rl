@@ -1,0 +1,7 @@
+input_channels: 4
+input_height_px: 72
+input_width_px: 128
+section_channels: [32, 64, 64]
+residual_blocks_per_section: 2
+feature_dim: 256
+action_count: 2

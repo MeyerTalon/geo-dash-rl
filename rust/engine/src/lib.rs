@@ -1,5 +1,6 @@
 pub mod action;
 pub mod env;
+pub mod frame_stack;
 pub mod level;
 pub mod physics;
 pub mod render;

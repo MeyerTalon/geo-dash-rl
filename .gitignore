@@ -213,3 +213,7 @@ src/model/checkpoints/
 /checkpoints/
 .DS_Store
 /.vscode/
+
+# Training outputs
+checkpoints/
+runs/

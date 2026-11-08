@@ -6,6 +6,7 @@ from src.config import (
     load_config,
     require_float,
     require_int,
+    require_int_list,
     require_mapping,
     require_section,
 )
@@ -41,3 +42,28 @@ def test_non_numeric_float_key_raises() -> None:
 def test_non_mapping_raises() -> None:
     with pytest.raises(TypeError):
         require_mapping([1, 2], name='sim')
+
+
+def test_string_section_loads_the_referenced_file(tmp_path: Path) -> None:
+    (tmp_path / 'model').mkdir()
+    (tmp_path / 'model' / 'small.yml').write_text('width: 8\n')
+    path = tmp_path / 'run.yml'
+    path.write_text('seed: 1\nmodel: model/small.yml\n')
+    assert require_int(require_section(load_config(path), 'model'), 'width') == 8
+
+
+def test_missing_referenced_file_raises(tmp_path: Path) -> None:
+    path = tmp_path / 'run.yml'
+    path.write_text('model: model/missing.yml\n')
+    with pytest.raises(FileNotFoundError):
+        load_config(path)
+
+
+def test_int_list_reads_every_item() -> None:
+    assert require_int_list({'widths': [16, 32]}, 'widths') == [16, 32]
+
+
+@pytest.mark.parametrize('value', [16, [16, 'wide'], [True]])
+def test_int_list_rejects_wrong_types(value: object) -> None:
+    with pytest.raises(TypeError):
+        require_int_list({'widths': value}, 'widths')

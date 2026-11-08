@@ -10,8 +10,9 @@ ACTION_COUNT = 2
 
 
 class StepBatch(NamedTuple):
-    """`obs` is `(N, H, W)` uint8. Envs that finished an episode are already reset, so `obs`
-    holds their next episode's first frame while the other fields describe the finished one."""
+    """`obs` is `(N, S, H, W)` uint8 with the newest frame last along `S`. Envs that finished
+    an episode are already reset, so every frame in their stack is the next episode's first
+    frame while the other fields describe the finished one."""
 
     obs: NDArray[np.uint8]
     rewards: NDArray[np.float32]
@@ -33,6 +34,7 @@ class NativeVecEnv:
             seed,
             geo_dash_native.EnvConfig(
                 config.frame_skip,
+                config.frame_stack,
                 config.level_length_units,
                 config.obs_width_px,
                 config.obs_height_px,

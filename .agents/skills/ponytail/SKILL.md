@@ -3,7 +3,7 @@ name: ponytail
 description: >
   Forces the laziest solution that actually works, simplest, shortest, most
   minimal. Channels a senior dev who has seen everything: question whether the
-  task needs to exist at all (YAGNI), reuse what src/ already has, reach for
+  task needs to exist at all (YAGNI), reuse what python/src/ already has, reach for
   the standard library, PyTorch, and Rust std before custom code and installed
   dependencies before new ones, one line before fifty. Use on ANY coding task
   in this repo: writing, adding, refactoring, fixing, reviewing, or designing
@@ -28,8 +28,8 @@ here. Always on for coding tasks.
 Stop at the first rung that holds:
 
 1. **Does this need to exist at all?** Speculative need = skip it, say so in one line. (YAGNI)
-2. **Already in this codebase?** A helper, type, or pattern in `src/` or `rust/` → reuse it. Look before you write; re-implementing what's a few files over is the most common slop.
-3. **Stdlib or PyTorch does it?** Use it (`torch.distributions.Categorical`, `nn.LSTM`, `TensorDataset`). In Rust, std first.
+2. **Already in this codebase?** A helper, type, or pattern in `python/src/` or `rust/` → reuse it. Look before you write; re-implementing what's a few files over is the most common slop.
+3. **Stdlib or PyTorch does it?** Use it (`F.log_softmax`, `nn.LSTM`, `TensorDataset`). In Rust, std first.
 4. **Already-installed dependency solves it?** Use it. Never add a new one for what a few lines can do.
 5. **Can it be one line?** One line.
 6. **Only then:** the minimum code that works, shaped like the closest existing example.

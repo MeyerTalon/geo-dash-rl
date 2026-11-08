@@ -120,6 +120,7 @@ mod tests {
             obs: ObsSpec {
                 width_px: NonZeroU16::new(8).unwrap(),
                 height_px: NonZeroU16::new(8).unwrap(),
+                frame_stack: NonZeroU8::MIN,
             },
             death_penalty: DEATH_PENALTY,
             completion_bonus: COMPLETION_BONUS,

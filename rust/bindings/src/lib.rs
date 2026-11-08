@@ -13,6 +13,7 @@ type StepResult<'py> = (Bound<'py, PyBytes>, Vec<f32>, Vec<bool>, Vec<f32>);
 #[pyclass(frozen)]
 struct EnvConfig {
     frame_skip: u8,
+    frame_stack: u8,
     level_length_units: f32,
     obs_width_px: u16,
     obs_height_px: u16,
@@ -25,6 +26,7 @@ impl EnvConfig {
     #[new]
     fn new(
         frame_skip: u8,
+        frame_stack: u8,
         level_length_units: f32,
         obs_width_px: u16,
         obs_height_px: u16,
@@ -33,6 +35,7 @@ impl EnvConfig {
     ) -> Self {
         Self {
             frame_skip,
+            frame_stack,
             level_length_units,
             obs_width_px,
             obs_height_px,
@@ -57,6 +60,8 @@ impl EnvConfig {
                     .ok_or_else(|| non_zero_error("obs_width_px"))?,
                 height_px: NonZeroU16::new(self.obs_height_px)
                     .ok_or_else(|| non_zero_error("obs_height_px"))?,
+                frame_stack: NonZeroU8::new(self.frame_stack)
+                    .ok_or_else(|| non_zero_error("frame_stack"))?,
             },
             death_penalty: self.death_penalty,
             completion_bonus: self.completion_bonus,
