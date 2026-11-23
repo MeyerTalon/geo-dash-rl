@@ -23,6 +23,10 @@ run = "uv run maturin develop --release --manifest-path rust/bindings/Cargo.toml
 description = "Build every Rust crate"
 run = "cargo build --manifest-path rust/Cargo.toml --workspace"
 
+[tasks."levels:import"]
+description = "Convert a Geometry Dash level string file into a level json; pass <source file> <output json>, for example levels/1.json"
+run = "cargo run --release --manifest-path rust/Cargo.toml -p geo-dash-importer --"
+
 [tasks."run:bench"]
 description = "Step the simulator with random actions and report steps per second"
 depends = ["rust:develop"]
@@ -65,7 +69,7 @@ description = "Fail on comments or lint suppressions in code and config, on inte
 run = [
   "if rg -n '(^|\\s)#' python -g '*.py' -g '*.pyi' -g '*.yml'; then exit 1; else test $? -eq 1; fi",
   "if rg -n '//' rust -g '*.rs'; then exit 1; else test $? -eq 1; fi",
-  "if rg -n '^\\s*#' mise.toml python/pyproject.toml rust/Cargo.toml rust/clippy.toml rust/engine/Cargo.toml rust/bindings/Cargo.toml rust/bindings/pyproject.toml; then exit 1; else test $? -eq 1; fi",
+  "if rg -n '^\\s*#' mise.toml python/pyproject.toml rust/Cargo.toml rust/clippy.toml rust/engine/Cargo.toml rust/bindings/Cargo.toml rust/importer/Cargo.toml rust/bindings/pyproject.toml; then exit 1; else test $? -eq 1; fi",
   "if rg -n --pcre2 '(?<![\\w.])\\d{4,}(?![\\w.])' python rust -g '*.py' -g '*.pyi' -g '*.yml' -g '*.rs'; then exit 1; else test $? -eq 1; fi",
   "for dir in .claude .codex .cursor; do test \"$(readlink $dir/skills)\" = ../.agents/skills || exit 1; done",
 ]

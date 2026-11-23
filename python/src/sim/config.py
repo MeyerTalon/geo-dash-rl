@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Self
 
-from src.config import require_float, require_int
+from src.config import require_float, require_int, require_str_list
 
 U8_MAX = 255
 U16_MAX = 65_535
@@ -18,6 +18,8 @@ class SimConfig:
     level_length_units: float
     death_penalty: float
     completion_bonus: float
+    level_paths: tuple[str, ...]
+    imported_fraction: float
 
     @classmethod
     def from_config(cls, section: Mapping[str, object]) -> Self:
@@ -30,6 +32,8 @@ class SimConfig:
             level_length_units=require_float(section, 'level_length_units'),
             death_penalty=require_float(section, 'death_penalty'),
             completion_bonus=require_float(section, 'completion_bonus'),
+            level_paths=tuple(require_str_list(section, 'level_paths')),
+            imported_fraction=require_float(section, 'imported_fraction'),
         )
         config.validate()
         return config
@@ -69,4 +73,8 @@ class SimConfig:
         if self.completion_bonus < 0:
             raise ValueError(
                 f'completion_bonus must not be negative, got {self.completion_bonus}'
+            )
+        if not 0 <= self.imported_fraction <= 1:
+            raise ValueError(
+                f'imported_fraction must be in [0, 1], got {self.imported_fraction}'
             )

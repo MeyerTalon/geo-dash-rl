@@ -1,10 +1,12 @@
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 
 use rayon::prelude::*;
 
 use crate::action::Action;
 use crate::env::{Env, EnvConfig, StepOutcome, Termination};
 use crate::frame_stack::{fill_frames, push_frame};
+use crate::level_pool::LevelPool;
 
 pub struct VecEnv {
     envs: Vec<Env>,
@@ -15,12 +17,13 @@ pub struct VecEnv {
 
 impl VecEnv {
     #[must_use]
-    pub fn new(config: EnvConfig, num_envs: NonZeroUsize, seed: u64) -> Self {
+    pub fn new(config: EnvConfig, pool: LevelPool, num_envs: NonZeroUsize, seed: u64) -> Self {
+        let pool = Arc::new(pool);
         let frame_len = config.obs.frame_len();
         let stack_len = config.obs.stack_len();
         let envs: Vec<Env> = (seed..)
             .take(num_envs.get())
-            .map(|env_seed| Env::new(config, env_seed))
+            .map(|env_seed| Env::new(config, Arc::clone(&pool), env_seed))
             .collect();
         let obs = vec![0; stack_len * envs.len()];
         let mut vec_env = Self {
@@ -103,7 +106,12 @@ mod tests {
     }
 
     fn vec_env(seed: u64) -> VecEnv {
-        VecEnv::new(config(), NonZeroUsize::new(NUM_ENVS).unwrap(), seed)
+        VecEnv::new(
+            config(),
+            LevelPool::new(Vec::new(), 0.0),
+            NonZeroUsize::new(NUM_ENVS).unwrap(),
+            seed,
+        )
     }
 
     #[test]

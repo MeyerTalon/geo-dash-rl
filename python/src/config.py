@@ -44,6 +44,13 @@ def require_float(section: Mapping[str, object], key: str) -> float:
     return float(value)
 
 
+def require_str_list(section: Mapping[str, object], key: str) -> list[str]:
+    value = require_key(section, key)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise TypeError(f'config key {key!r} must be a list of strings, got {value!r}')
+    return [str(item) for item in value]
+
+
 def require_int_list(section: Mapping[str, object], key: str) -> list[int]:
     value = require_key(section, key)
     if not isinstance(value, list):

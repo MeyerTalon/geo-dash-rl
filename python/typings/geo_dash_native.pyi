@@ -11,7 +11,14 @@ class EnvConfig:
     ) -> None: ...
 
 class VecEnv:
-    def __init__(self, num_envs: int, seed: int, config: EnvConfig) -> None: ...
+    def __init__(
+        self,
+        num_envs: int,
+        seed: int,
+        config: EnvConfig,
+        level_paths: list[str],
+        imported_fraction: float,
+    ) -> None: ...
     def reset(self) -> bytes: ...
     def step(
         self, actions: bytes

@@ -3,9 +3,15 @@ import pytest
 import torch
 from numpy.typing import NDArray
 
-from src.model.config import ModelConfig
+from src.model.config import EvalConfig, ModelConfig
 from src.model.network import ActorCritic
-from src.rollout import collect_rollout, evaluate_policy, initial_state
+from src.rollout import (
+    collect_rollout,
+    eval_sim_config,
+    evaluate_policy,
+    initial_state,
+)
+from src.sim.config import SimConfig
 from src.sim.vec_env import StepBatch
 
 NUM_ENVS = 2
@@ -79,3 +85,25 @@ def test_evaluation_returns_the_model_to_training_mode() -> None:
     model = ActorCritic(MODEL_CONFIG)
     evaluate_policy(ScriptedEnv(), model, 1, DEVICE)
     assert model.training
+
+
+def test_eval_env_uses_the_held_out_levels_and_keeps_the_rest_of_the_sim() -> None:
+    sim_config = SimConfig(
+        num_envs=NUM_ENVS,
+        frame_skip=4,
+        frame_stack=4,
+        obs_width_px=32,
+        obs_height_px=18,
+        level_length_units=100.0,
+        death_penalty=1.0,
+        completion_bonus=1.0,
+        level_paths=('levels/train.json',),
+        imported_fraction=0.5,
+    )
+    eval_config = EvalConfig(
+        seed=1, episodes=2, interval_updates=1, level_paths=('levels/held_out.json',)
+    )
+    result = eval_sim_config(sim_config, eval_config)
+    assert result.level_paths == ('levels/held_out.json',)
+    assert result.imported_fraction == 0.5
+    assert result.num_envs == NUM_ENVS

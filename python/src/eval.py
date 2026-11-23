@@ -7,7 +7,7 @@ from src.model.checkpoint import load_checkpoint
 from src.model.config import EvalConfig, ModelConfig
 from src.model.device import select_device
 from src.model.network import ActorCritic
-from src.rollout import evaluate_policy
+from src.rollout import eval_sim_config, evaluate_policy
 from src.sim.config import SimConfig
 from src.sim.vec_env import NativeVecEnv
 
@@ -26,7 +26,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     model = ActorCritic(model_config)
     model.load_state_dict(checkpoint.model_state)
     result = evaluate_policy(
-        NativeVecEnv(sim_config, eval_config.seed),
+        NativeVecEnv(eval_sim_config(sim_config, eval_config), eval_config.seed),
         model.to(device),
         eval_config.episodes // sim_config.num_envs,
         device,

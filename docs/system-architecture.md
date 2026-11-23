@@ -33,7 +33,7 @@ flowchart LR
 | Rust engine: physics, levels, renderer, parallel vectorized env | `rust/engine/` | Vertical slice. Placeholder physics and generated levels. |
 | PyO3 bindings, built as the Python module `geo_dash_native` | `rust/bindings/` | Done for the current engine API. |
 | Typed Python wrapper and config | `python/src/sim/`, `python/src/config.py` | Done. |
-| Level importer | `rust/importer/` | Planned. |
+| Level importer | `rust/importer/` | Done for solids and spikes. Level 1 imports. Portals, pads, orbs, and triggers are not simulated. |
 | Network, trainer, rollout loop, metrics | `python/src/model/`, `python/src/rollout.py`, `python/src/run_log.py`, `python/src/train.py`, `python/src/eval.py` | Done. |
 | Shared preprocessing: frame stack | `rust/engine/` | Done. Grayscale conversion and resizing of real frames are planned. |
 | Real-game player: capture, policy, input | `rust/play/` and a play entry point | Planned. |
@@ -43,19 +43,37 @@ flowchart LR
 The engine owns everything about the game world, and nothing else knows the physics.
 
 - `physics.rs` advances the player one fixed tick at a time (240 ticks per second).
-- `level.rs` holds a level and generates one from a seed.
-- `render.rs` draws a grayscale frame of the world around the player.
+- `level.rs` holds a level (a length, spikes, and solid rectangles) and generates one from a seed.
+- `level_pool.rs` picks each episode's level: an imported one with probability `imported_fraction`, otherwise a generated one.
+- `render.rs` draws a grayscale frame of the world around the player: ground, spikes, solids, and the player.
 - `frame_stack.rs` keeps the last frames in a stack, newest last.
 - `env.rs` is one environment. One agent step runs `frame_skip` ticks, computes the reward, and reports termination.
-- `vec_env.rs` runs many environments in parallel with rayon. A finished environment resets itself inside the same step, and the next episode starts on a freshly generated level.
+- `vec_env.rs` runs many environments in parallel with rayon. A finished environment resets itself inside the same step, and the next episode starts on a level picked from the level pool.
 
 The engine has no Python dependency and `unsafe_code` is forbidden in it. All FFI lives in `rust/bindings/`.
+
+### Level importer
+
+`rust/importer/` is a binary crate that turns one game level string file into the engine's `Level` as JSON. `mise run levels:import <source> <output>` runs it. The game ships its official levels as `Contents/Resources/levels/<id>.txt` inside the app. Nothing else on disk holds levels: online levels come from the game's servers. Imported levels are copyrighted game data, so `levels/` is gitignored.
+
+A level file is base64url text of a gzip stream. The decoded text is a header segment followed by one segment per object, separated by `;`. An object is `key,value` pairs: `1` is the object id, `2` and `3` are the center x and y in pixels, `5` is a vertical flip, and `6` is the rotation in degrees. One block is 30 pixels, which is one engine unit, and the ground is y 0.
+
+- `decode.rs` undoes the base64url and the gzip.
+- `parse.rs` reads the objects and skips the header.
+- `table.rs` maps an object id to `Solid`, `Spike`, `Decoration`, or `NotSimulated`, with a sprite-sized box for solids and spikes. An id missing from the table fails the import and is named in the error.
+- `convert.rs` converts pixels to units, applies flip and quarter-turn rotation, and builds the `Level`. A spike rotated sideways, or any rotation that is not a quarter turn, fails the import. The level length is the furthest object, decoration included.
+
+The import report counts what was dropped. `NotSimulated` objects (portals today) are skipped and counted by id, so a level that needs them still imports but plays differently from the game.
+
+Box sizes come from the game's sprite sheet (`GJ_GameSheet.plist`) and are used as hitboxes. The real hitboxes are smaller than the sprites, so they stay placeholders until the replay test exists. Solids are drawn but have no collision yet.
 
 ### Python layer
 
 `python/src/sim/vec_env.py` defines the `VecEnv` protocol the learner depends on, and `NativeVecEnv`, which implements it on top of `geo_dash_native`. The learner imports the protocol only, so it can run against a fake environment in tests.
 
 Hyperparameters and simulator settings are required keys in `python/src/configs/`. A run config such as `default.yml` is a short manifest that names one file each from `sim/`, `model/`, and `ppo/`, so switching model size or PPO settings is a one-line change. Each config section is a frozen dataclass.
+
+A run mixes imported levels into training with `sim.level_paths` and `sim.imported_fraction`. `eval.level_paths` lists the held-out imported levels, and a level in both lists fails the run at startup. Paths are relative to the repository root. `default.yml` uses generated levels only, and `imported.yml` adds `levels/1.json`, so run `mise run levels:import` first.
 
 A run writes weights to `checkpoints/<run_name>/` (`latest.pt`, `best.pt`, and numbered snapshots) and metrics to `runs/<run_name>/` (`updates.csv`, `epochs.csv`, `eval.csv`, and TensorBoard data). Both stay out of git. `mise run run:tensorboard` shows live graphs for every run. Training episode metrics cover the last `metrics_window_episodes` finished episodes, because many updates finish none. Ctrl+C finishes the current update, including any evaluation or checkpoint due, then saves `latest.pt` and exits.
 
@@ -132,9 +150,10 @@ Training runs on Apple silicon first (MPS), then CUDA, then CPU. The simulator r
 
 The repository holds a vertical slice that runs end to end:
 
-- Cube physics on flat ground, with spikes as the only obstacle.
+- Cube physics on flat ground, with spikes as the only obstacle. Solids are drawn but the player passes through them.
 - Generated levels: spikes with random gaps, regenerated every episode.
-- A grayscale renderer with a player, ground, and spikes.
+- Imported levels: official levels converted by the importer, mixed with generated ones.
+- A grayscale renderer with a player, ground, spikes, and solids.
 - Parallel stepping across environments, exposed to Python.
 - A random-policy benchmark, which reaches roughly 30,000 environment steps per second on 16 environments at 128x72 on an Apple silicon laptop.
 
@@ -145,7 +164,7 @@ Everything numeric in the physics (run speed, gravity, jump speed, hitboxes) is 
 Each phase has an exit condition so it is clear when to move on.
 
 1. **Learner on the toy sim.** IMPALA network with the frame stack, batched PPO trainer, and a train entry point. Exit: the policy clears generated levels.
-2. **Level importer.** Parse real level data into the engine's level type. Exit: an imported level loads and renders.
+2. **Level importer.** Parse real level data into the engine's level type. Exit: an imported level loads and renders. Done for level 1: solids and spikes only. The start gamemode and speed in the header are not read yet, so check them before importing another level.
 3. **Fidelity.** Record real runs, add the replay test, and calibrate physics. Exit: replayed inputs reproduce real death positions.
 4. **Engine coverage.** Solid blocks, other gamemodes, orbs, pads, portals, speed changes, and triggers, in the order the target levels need them.
 5. **Visual parity.** Richer rendering with randomization, and the shared preprocessing step.
@@ -153,7 +172,6 @@ Each phase has an exit condition so it is clear when to move on.
 
 ## Open questions
 
-- Which level source to import from, and how to keep copied levels local.
 - How faithful the renderer must be before the policy transfers, and whether to randomize visuals or render the real sprites.
 - Which obstacle types to model first.
 - Whether grayscale keeps objects apart that differ mainly by color, such as orbs and pads. Check this before modeling them.

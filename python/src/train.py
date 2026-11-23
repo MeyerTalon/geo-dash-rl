@@ -21,6 +21,7 @@ from src.model.ppo import EpochMetrics, UpdateMetrics, ppo_update
 from src.rollout import (
     collect_rollout,
     completion_rate,
+    eval_sim_config,
     evaluate_policy,
     initial_state,
 )
@@ -105,6 +106,16 @@ def check_run_is_consistent(
         raise ValueError(
             f'eval episodes {eval_config.episodes} must divide evenly '
             f'across {num_envs} environments'
+        )
+
+
+def check_eval_levels_are_held_out(
+    sim_config: SimConfig, eval_config: EvalConfig
+) -> None:
+    shared = set(sim_config.level_paths) & set(eval_config.level_paths)
+    if shared:
+        raise ValueError(
+            f'levels in both the training pool and the held-out set: {sorted(shared)}'
         )
 
 
@@ -251,6 +262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     check_run_is_consistent(
         model_config, ppo, eval_config, sim_config.num_envs, first_obs.shape
     )
+    check_eval_levels_are_held_out(sim_config, eval_config)
 
     checkpoint_dir = CHECKPOINTS_DIR / args.run_name
     checkpoint_dir.mkdir(parents=True)
@@ -265,7 +277,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     signal.signal(signal.SIGINT, stop.request)
     run_training(
         env,
-        lambda: NativeVecEnv(sim_config, eval_config.seed),
+        lambda: NativeVecEnv(
+            eval_sim_config(sim_config, eval_config), eval_config.seed
+        ),
         model,
         optimizer,
         first_obs,

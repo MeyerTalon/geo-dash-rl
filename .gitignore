@@ -214,6 +214,9 @@ src/model/checkpoints/
 .DS_Store
 /.vscode/
 
+# Imported game levels
+/levels/
+
 # Training outputs
 checkpoints/
 runs/

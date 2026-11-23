@@ -35,7 +35,7 @@ PPO_SECTION: dict[str, object] = {
 }
 
 
-@pytest.mark.parametrize('name', ['default.yml', 'impala_x2.yml'])
+@pytest.mark.parametrize('name', ['default.yml', 'impala_x2.yml', 'imported.yml'])
 def test_shipped_run_configs_load(name: str) -> None:
     config = load_config(CONFIG_DIR / name)
     ModelConfig.from_config(require_section(config, 'model'))
@@ -102,6 +102,12 @@ def test_ppo_config_rejects_out_of_range_values(key: str, value: float) -> None:
     ('key', 'value'), [('seed', -1), ('episodes', 0), ('interval_updates', 0)]
 )
 def test_eval_config_rejects_out_of_range_values(key: str, value: int) -> None:
-    section = {'seed': 1, 'episodes': 4, 'interval_updates': 2, key: value}
+    section = {
+        'seed': 1,
+        'episodes': 4,
+        'interval_updates': 2,
+        'level_paths': [],
+        key: value,
+    }
     with pytest.raises(ValueError, match=key):
         EvalConfig.from_config(section)

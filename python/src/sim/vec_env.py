@@ -41,6 +41,8 @@ class NativeVecEnv:
                 config.death_penalty,
                 config.completion_bonus,
             ),
+            list(config.level_paths),
+            config.imported_fraction,
         )
 
     def reset(self) -> NDArray[np.uint8]:

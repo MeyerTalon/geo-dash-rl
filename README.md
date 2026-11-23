@@ -18,14 +18,17 @@ The repository is mid-rewrite. The old version trained in the live game with OCR
 
 - A Rust engine with placeholder cube physics, generated spike levels, a grayscale renderer, and a parallel vectorized environment.
 - PyO3 bindings and a typed Python wrapper (`python/src/sim/`).
+- An IMPALA CNN with a PPO trainer, plus train and eval entry points.
+- A level importer that converts the game's official level files into engine levels (`rust/importer/`).
 - A random-policy benchmark.
 
-The network, trainer, level importer, and real-game player are planned. See the roadmap in the architecture doc.
+The real-game player is planned. See the roadmap in the architecture doc.
 
 ## Layout
 
 - `rust/engine/` is the simulator: physics, levels, renderer, vectorized environment.
 - `rust/bindings/` builds the engine into the Python module `geo_dash_native`.
+- `rust/importer/` converts game level files into engine levels. Output goes to `levels/`, which stays out of git.
 - `python/src/sim/` is the typed Python layer over the engine.
 - `python/src/config.py` and `python/src/configs/` read YAML configs. Every hyperparameter is a required key.
 - `python/src/bench_sim.py` steps the simulator with random actions and reports throughput.

@@ -12,11 +12,13 @@ from src.model.config import EvalConfig, ModelConfig, PpoConfig
 from src.model.network import ActorCritic
 from src.model.ppo import EpochMetrics, UpdateMetrics
 from src.run_log import RunLog, UpdateRow
+from src.sim.config import SimConfig
 from src.tests.test_rollout import MODEL_CONFIG, NUM_ENVS, ScriptedEnv
 from src.train import (
     EpisodeHistory,
     StopRequest,
     TrainingSetup,
+    check_eval_levels_are_held_out,
     check_run_is_consistent,
     mean_metrics_row,
     run_training,
@@ -39,7 +41,7 @@ PPO_CONFIG = PpoConfig(
     checkpoint_interval_updates=2,
     metrics_window_episodes=5,
 )
-EVAL_CONFIG = EvalConfig(seed=100, episodes=4, interval_updates=2)
+EVAL_CONFIG = EvalConfig(seed=100, episodes=4, interval_updates=2, level_paths=())
 UPDATE_METRICS = UpdateMetrics(
     epochs=[EpochMetrics(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)], explained_variance=0.7
 )
@@ -82,7 +84,7 @@ def test_consistent_run_passes() -> None:
         (
             MODEL_CONFIG,
             PPO_CONFIG,
-            EvalConfig(seed=100, episodes=3, interval_updates=2),
+            EvalConfig(seed=100, episodes=3, interval_updates=2, level_paths=()),
             'episodes',
         ),
     ],
@@ -173,3 +175,30 @@ def test_history_keeps_only_the_latest_episodes() -> None:
     history.add([1.0, 2.0, 3.0], [0.1, 0.2, 0.3])
     assert list(history.progress_fractions) == [0.2, 0.3]
     assert list(history.returns) == [2.0, 3.0]
+
+
+SIM_CONFIG = SimConfig(
+    num_envs=NUM_ENVS,
+    frame_skip=4,
+    frame_stack=4,
+    obs_width_px=32,
+    obs_height_px=18,
+    level_length_units=100.0,
+    death_penalty=1.0,
+    completion_bonus=1.0,
+    level_paths=('levels/1.json', 'levels/2.json'),
+    imported_fraction=0.5,
+)
+
+
+def test_disjoint_held_out_levels_pass() -> None:
+    check_eval_levels_are_held_out(
+        SIM_CONFIG, replace(EVAL_CONFIG, level_paths=('levels/3.json',))
+    )
+
+
+def test_level_in_both_pools_raises() -> None:
+    with pytest.raises(ValueError, match=r'levels/2\.json'):
+        check_eval_levels_are_held_out(
+            SIM_CONFIG, replace(EVAL_CONFIG, level_paths=('levels/2.json',))
+        )

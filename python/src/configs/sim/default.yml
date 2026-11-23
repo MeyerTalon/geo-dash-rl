@@ -6,3 +6,5 @@ obs_height_px: 72
 level_length_units: 300.0
 death_penalty: 1.0
 completion_bonus: 1.0
+level_paths: []
+imported_fraction: 0.0

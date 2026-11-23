@@ -1,11 +1,14 @@
+from dataclasses import replace
 from typing import NamedTuple
 
 import numpy as np
 import torch
 from numpy.typing import NDArray
 
+from src.model.config import EvalConfig
 from src.model.network import ActorCritic
 from src.model.ppo import RolloutBatch
+from src.sim.config import SimConfig
 from src.sim.vec_env import VecEnv
 
 COMPLETED_PROGRESS_FRACTION = 1.0
@@ -33,6 +36,10 @@ class EvalResult(NamedTuple):
 
 def initial_state(obs: NDArray[np.uint8]) -> EnvState:
     return EnvState(obs, np.zeros(obs.shape[0], dtype=np.float32))
+
+
+def eval_sim_config(sim_config: SimConfig, eval_config: EvalConfig) -> SimConfig:
+    return replace(sim_config, level_paths=eval_config.level_paths)
 
 
 def completion_rate(progress_fractions: list[float]) -> float:

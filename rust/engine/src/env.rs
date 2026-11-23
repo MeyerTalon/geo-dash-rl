@@ -1,10 +1,12 @@
 use std::num::NonZeroU8;
+use std::sync::Arc;
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::action::Action;
 use crate::level::Level;
+use crate::level_pool::LevelPool;
 use crate::physics::{PLAYER_SIZE_UNITS, Player};
 use crate::render::{ObsSpec, render_into};
 
@@ -33,18 +35,20 @@ pub struct StepOutcome {
 
 pub struct Env {
     config: EnvConfig,
+    pool: Arc<LevelPool>,
     rng: StdRng,
-    level: Level,
+    level: Arc<Level>,
     player: Player,
 }
 
 impl Env {
     #[must_use]
-    pub fn new(config: EnvConfig, seed: u64) -> Self {
+    pub fn new(config: EnvConfig, pool: Arc<LevelPool>, seed: u64) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
-        let level = Level::generate(config.level_length_units, &mut rng);
+        let level = pool.pick(config.level_length_units, &mut rng);
         Self {
             config,
+            pool,
             rng,
             level,
             player: Player::at_start(),
@@ -52,7 +56,9 @@ impl Env {
     }
 
     pub fn reset(&mut self) {
-        self.level = Level::generate(self.config.level_length_units, &mut self.rng);
+        self.level = self
+            .pool
+            .pick(self.config.level_length_units, &mut self.rng);
         self.player = Player::at_start();
     }
 
@@ -127,6 +133,10 @@ mod tests {
         }
     }
 
+    fn generated_pool() -> Arc<LevelPool> {
+        Arc::new(LevelPool::new(Vec::new(), 0.0))
+    }
+
     fn run_until_done(env: &mut Env, action: Action) -> (StepOutcome, f32) {
         let mut total_reward = 0.0;
         for _ in 0..MAX_STEPS {
@@ -141,7 +151,7 @@ mod tests {
 
     #[test]
     fn idling_into_a_spike_dies_with_the_penalty() {
-        let mut env = Env::new(config(SPIKED_LENGTH_UNITS), 0);
+        let mut env = Env::new(config(SPIKED_LENGTH_UNITS), generated_pool(), 0);
         let (outcome, total_reward) = run_until_done(&mut env, Action::Release);
         assert_eq!(outcome.termination, Termination::Died);
         assert!(outcome.progress_fraction < 1.0);
@@ -151,7 +161,7 @@ mod tests {
 
     #[test]
     fn reaching_the_end_of_a_spike_free_level_completes_with_the_bonus() {
-        let mut env = Env::new(config(SPIKE_FREE_LENGTH_UNITS), 0);
+        let mut env = Env::new(config(SPIKE_FREE_LENGTH_UNITS), generated_pool(), 0);
         let (outcome, total_reward) = run_until_done(&mut env, Action::Release);
         assert_eq!(outcome.termination, Termination::Completed);
         assert!((outcome.progress_fraction - 1.0).abs() < TOLERANCE);
@@ -160,7 +170,7 @@ mod tests {
 
     #[test]
     fn reset_returns_the_player_to_the_start() {
-        let mut env = Env::new(config(SPIKED_LENGTH_UNITS), 0);
+        let mut env = Env::new(config(SPIKED_LENGTH_UNITS), generated_pool(), 0);
         run_until_done(&mut env, Action::Release);
         env.reset();
         let outcome = env.step(Action::Release);

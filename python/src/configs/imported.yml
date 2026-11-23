@@ -1,0 +1,9 @@
+seed: 0
+sim: sim/imported.yml
+model: model/impala_x1.yml
+ppo: ppo/baseline.yml
+eval:
+  seed: 1_000_000
+  episodes: 64
+  interval_updates: 100
+  level_paths: []

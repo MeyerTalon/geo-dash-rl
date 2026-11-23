@@ -1,0 +1,13 @@
+[package]
+name = "geo-dash-importer"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+base64 = "0.23.1"
+flate2 = "1.1.11"
+geo-dash-engine = { version = "0.1.0", path = "../engine" }
+serde_json = "1.0.154"

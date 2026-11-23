@@ -1,7 +1,10 @@
+use std::fs;
 use std::num::{NonZeroU8, NonZeroU16, NonZeroUsize};
 
 use geo_dash_engine::action::Action;
 use geo_dash_engine::env::{EnvConfig as EngineEnvConfig, Termination};
+use geo_dash_engine::level::Level;
+use geo_dash_engine::level_pool::LevelPool;
 use geo_dash_engine::render::ObsSpec;
 use geo_dash_engine::vec_env::VecEnv as EngineVecEnv;
 use pyo3::exceptions::PyValueError;
@@ -69,6 +72,30 @@ impl EnvConfig {
     }
 }
 
+fn load_level(path: &str) -> PyResult<Level> {
+    let json = fs::read_to_string(path)
+        .map_err(|error| PyValueError::new_err(format!("cannot read level {path}: {error}")))?;
+    let level: Level = serde_json::from_str(&json)
+        .map_err(|error| PyValueError::new_err(format!("invalid level {path}: {error}")))?;
+    if !(level.length_units() > 0.0 && level.length_units().is_finite()) {
+        return Err(PyValueError::new_err(format!(
+            "level {path} must have a positive finite length"
+        )));
+    }
+    Ok(level)
+}
+
+fn build_pool(level_paths: Vec<String>, imported_fraction: f32) -> PyResult<LevelPool> {
+    if !(0.0..=1.0).contains(&imported_fraction) {
+        return Err(PyValueError::new_err("imported_fraction must be in [0, 1]"));
+    }
+    let levels = level_paths
+        .into_iter()
+        .map(|path| load_level(&path))
+        .collect::<PyResult<Vec<_>>>()?;
+    Ok(LevelPool::new(levels, imported_fraction))
+}
+
 #[pyclass]
 struct VecEnv {
     inner: EngineVecEnv,
@@ -77,11 +104,22 @@ struct VecEnv {
 #[pymethods]
 impl VecEnv {
     #[new]
-    fn new(num_envs: usize, seed: u64, config: &EnvConfig) -> PyResult<Self> {
+    fn new(
+        num_envs: usize,
+        seed: u64,
+        config: &EnvConfig,
+        level_paths: Vec<String>,
+        imported_fraction: f32,
+    ) -> PyResult<Self> {
         let num_envs = NonZeroUsize::new(num_envs)
             .ok_or_else(|| PyValueError::new_err("num_envs must be positive"))?;
         Ok(Self {
-            inner: EngineVecEnv::new(config.to_engine()?, num_envs, seed),
+            inner: EngineVecEnv::new(
+                config.to_engine()?,
+                build_pool(level_paths, imported_fraction)?,
+                num_envs,
+                seed,
+            ),
         })
     }
 

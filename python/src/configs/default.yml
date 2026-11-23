@@ -6,3 +6,4 @@ eval:
   seed: 1_000_000
   episodes: 64
   interval_updates: 100
+  level_paths: []

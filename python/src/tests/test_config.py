@@ -9,6 +9,7 @@ from src.config import (
     require_int_list,
     require_mapping,
     require_section,
+    require_str_list,
 )
 
 
@@ -67,3 +68,16 @@ def test_int_list_reads_every_item() -> None:
 def test_int_list_rejects_wrong_types(value: object) -> None:
     with pytest.raises(TypeError):
         require_int_list({'widths': value}, 'widths')
+
+
+def test_str_list_reads_every_item() -> None:
+    assert require_str_list({'paths': ['a.json', 'b.json']}, 'paths') == [
+        'a.json',
+        'b.json',
+    ]
+
+
+@pytest.mark.parametrize('value', ['a.json', [1], ['a.json', 2]])
+def test_str_list_rejects_wrong_types(value: object) -> None:
+    with pytest.raises(TypeError):
+        require_str_list({'paths': value}, 'paths')

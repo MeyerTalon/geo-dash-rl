@@ -1,3 +1,7 @@
+import json
+from dataclasses import replace
+from pathlib import Path
+
 import numpy as np
 import pytest
 from numpy.typing import NDArray
@@ -16,7 +20,10 @@ CONFIG = SimConfig(
     level_length_units=100.0,
     death_penalty=1.0,
     completion_bonus=1.0,
+    level_paths=(),
+    imported_fraction=0.0,
 )
+SPIKE_FREE_LEVEL_LENGTH_UNITS = 5.0
 
 
 def release_actions() -> NDArray[np.uint8]:
@@ -96,3 +103,42 @@ def test_unknown_action_index_raises() -> None:
     env = NativeVecEnv(CONFIG, seed=0)
     with pytest.raises(ValueError, match='action index 2'):
         env.step(np.full(CONFIG.num_envs, 2, dtype=np.uint8))
+
+
+def write_spike_free_level(path: Path) -> Path:
+    path.write_text(
+        json.dumps(
+            {'length_units': SPIKE_FREE_LEVEL_LENGTH_UNITS, 'spikes': [], 'solids': []}
+        )
+    )
+    return path
+
+
+def test_imported_level_replaces_generated_ones(tmp_path: Path) -> None:
+    level_path = write_spike_free_level(tmp_path / 'level.json')
+    config = replace(CONFIG, level_paths=(str(level_path),), imported_fraction=1.0)
+    env = NativeVecEnv(config, seed=0)
+    env.reset()
+    for _ in range(MAX_STEPS):
+        batch = env.step(release_actions())
+        if batch.dones.all():
+            assert (batch.progress_fraction == 1.0).all()
+            assert (batch.rewards > 0).all()
+            return
+    pytest.fail('imported spike-free level never completed')
+
+
+def test_missing_level_file_raises(tmp_path: Path) -> None:
+    config = replace(
+        CONFIG, level_paths=(str(tmp_path / 'missing.json'),), imported_fraction=1.0
+    )
+    with pytest.raises(ValueError, match='cannot read level'):
+        NativeVecEnv(config, seed=0)
+
+
+def test_malformed_level_file_raises(tmp_path: Path) -> None:
+    level_path = tmp_path / 'level.json'
+    level_path.write_text('{}')
+    config = replace(CONFIG, level_paths=(str(level_path),), imported_fraction=1.0)
+    with pytest.raises(ValueError, match='invalid level'):
+        NativeVecEnv(config, seed=0)

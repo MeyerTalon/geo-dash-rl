@@ -8,7 +8,7 @@ A reinforcement learning agent that plays Geometry Dash from pixels. It trains o
 
 The work splits in two:
 
-- Rust (`rust/`) is the simulator (`rust/engine/`) and the PyO3 bindings that expose it to Python (`rust/bindings/`). Real-game screen capture and input will also live here.
+- Rust (`rust/`) is the simulator (`rust/engine/`), the PyO3 bindings that expose it to Python (`rust/bindings/`), and the level importer (`rust/importer/`). Real-game screen capture and input will also live here.
 - Python (`python/src/`) holds the learning code and a thin typed layer over the simulator.
 
 The repo was rewritten from scratch. Nothing from the earlier live-game version remains.
@@ -44,6 +44,7 @@ When the user corrects you, fix the instance and propose the layer that prevents
 mise run setup # uv sync, then build the Rust engine into python/.venv
 mise run rust:develop # rebuild the engine into python/.venv after a change under rust/
 mise run rust:build # cargo build for every crate
+mise run levels:import <source> <output> # convert a game level string file into a level json, for example levels/1.json
 mise run run:bench # random-policy simulator throughput
 mise run run:train --run-name <name> # train a policy
 mise run run:eval --checkpoint <path> # evaluate a checkpoint on held-out levels
@@ -61,7 +62,7 @@ mise tasks # list all tasks
 
 Add Python dependencies with `uv add` (or `uv add --dev`) from `python/` and Rust dependencies with `cargo add` from the crate directory. Never hand-edit `uv.lock` or `Cargo.lock`. `uv sync` removes the built `geo_dash_native` module, so run `mise run rust:develop` after it (`setup` does).
 
-Rust has no comments, and the golden-path scan forbids `//` and so doc comments too. Put the contract in names, types, `NonZero` integers, and the architecture doc. Public Rust functions don't return `Result`, because clippy's `missing_errors_doc` would demand a doc comment. Validate at the boundary (the bindings or the Python config) and keep the engine types valid by construction.
+Rust has no comments, and the golden-path scan forbids `//` and so doc comments too. Put the contract in names, types, `NonZero` integers, and the architecture doc. Public Rust functions don't return `Result`, because clippy's `missing_errors_doc` would demand a doc comment. Validate at the boundary (the bindings or the Python config) and keep the engine types valid by construction. The importer is a binary crate, so its private functions return `Result<_, String>`.
 
 ## Feature map
 
@@ -74,14 +75,21 @@ rust/
   clippy.toml                panic-family lints relaxed in tests only
   engine/                    the simulator crate, no Python dependency
     src/action.rs            Action enum and the u8 conversion
-    src/level.rs             Level, Spike, and seeded level generation
+    src/level.rs             Level, Rect, Spike, and seeded level generation
+    src/level_pool.rs        LevelPool: imported levels mixed with generated ones per episode
     src/physics.rs           Player and the fixed-tick cube physics
-    src/render.rs            ObsSpec and the grayscale frame renderer
+    src/render.rs            ObsSpec and the grayscale frame renderer: player, ground, spikes, solids
     src/frame_stack.rs       pushing and refilling a stack of frames
     src/env.rs               EnvConfig, one Env, reward and termination
     src/vec_env.rs           parallel VecEnv with auto reset
   bindings/                  PyO3 crate built into the geo_dash_native module
     pyproject.toml           maturin build config
+  importer/                  binary crate: game level string to level json
+    src/decode.rs            base64url and gunzip of a level string
+    src/parse.rs             level text to raw objects
+    src/table.rs             object id to solid, spike, decoration, or not simulated
+    src/convert.rs           raw objects to a Level, pixel to unit conversion, import report
+    src/main.rs              command line entry point
 python/
   pyproject.toml             deps, ruff, mypy, pytest
   uv.lock                    locked Python dependencies
@@ -89,7 +97,8 @@ python/
   src/config.py              YAML loading, section references, and the require_* readers
   src/configs/default.yml    run manifest: seed, sim, model, ppo, and eval sections
   src/configs/impala_x2.yml  the same manifest with the wider model
-  src/configs/sim/           simulator settings
+  src/configs/imported.yml   the same manifest as default.yml with levels/1.json mixed into training
+  src/configs/sim/           simulator settings: default.yml is generated levels only, imported.yml adds levels/1.json
   src/configs/model/         network dimensions
   src/configs/ppo/           PPO hyperparameters
   src/sim/config.py          SimConfig dataclass
@@ -112,7 +121,7 @@ python/
 - **Don't run real-game tasks yourself.** Any future task that captures the screen or sends input takes over the real mouse and keyboard and needs the game window open. Ask the user to run it. Simulator tasks like `run:bench` are safe.
 - **The real-game player will assume a 1280x720 windowed game at the top-left of the primary display.** Nothing implements it yet.
 - **Keep checkpoints loadable.** Once the network exists, module attribute names, `nn.Sequential` order, and checkpoint keys are a compatibility surface for saved weights. Changing them needs explicit user approval. Weights saved by the pre-rewrite network are not compatible with anything here.
-- **Never commit weights.** `checkpoints/` and `runs/` stay out of git.
+- **Never commit weights or game levels.** `checkpoints/`, `runs/`, and `levels/` stay out of git. Imported levels are copyrighted game data.
 - **Leave changes local by default.** Don't `git add`, commit, push, or open pull requests unless the user explicitly asks for that action.
 - Never add yourself as a contributor, and never mention yourself in a commit message or pull request. No `Co-authored-by` trailers for an agent, model, or tool.
 - Don't expand scope beyond the asked change.

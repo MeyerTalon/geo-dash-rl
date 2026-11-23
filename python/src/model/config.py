@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Self
 
-from src.config import require_float, require_int, require_int_list
+from src.config import require_float, require_int, require_int_list, require_str_list
 
 
 @dataclass(frozen=True)
@@ -126,6 +126,7 @@ class EvalConfig:
     seed: int
     episodes: int
     interval_updates: int
+    level_paths: tuple[str, ...]
 
     @classmethod
     def from_config(cls, section: Mapping[str, object]) -> Self:
@@ -133,6 +134,7 @@ class EvalConfig:
             seed=require_int(section, 'seed'),
             episodes=require_int(section, 'episodes'),
             interval_updates=require_int(section, 'interval_updates'),
+            level_paths=tuple(require_str_list(section, 'level_paths')),
         )
         config.validate()
         return config
